@@ -70,5 +70,3 @@ Example of how the output should look (screenshots or sample results).
 ## 📬 Contact
 
 For any inquiries, reach out to your.email\@example.com. ### To be populated
-
-
