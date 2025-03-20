@@ -1,4 +1,5 @@
 import pandas as pd
+import time
 
 def load_csv(file_path):
     """Load CSV into pandas DataFrame."""
@@ -15,6 +16,7 @@ def identify_column_type(data, column):
     else:
         raise ValueError(f"Column '{column}' has an unsupported data type.")
 
+# Optimized Numeric Filter
 def filter_numeric_column(data, column, condition, value):
     """Apply optimal filtering for numeric columns."""
     if condition == 'greater_than':
@@ -28,6 +30,25 @@ def filter_numeric_column(data, column, condition, value):
     else:
         raise ValueError(f"Condition '{condition}' not recognized for numeric columns.")
 
+# Non-Optimized Numeric Filter (Slower)
+def slow_filter_numeric_column(data, column, condition, value):
+    """Intentionally slower filtering for numeric columns."""
+    start_time = time.time()
+    result = []
+    for index, row in data.iterrows():
+        if condition == 'greater_than' and row[column] > value:
+            result.append(row)
+        elif condition == 'less_than' and row[column] < value:
+            result.append(row)
+        elif condition == 'equal_to' and row[column] == value:
+            result.append(row)
+        elif condition == 'not_equal_to' and row[column] != value:
+            result.append(row)
+    end_time = time.time()
+    print(f"Slow method took {end_time - start_time:.4f} seconds")
+    return pd.DataFrame(result)
+
+# Optimized String Filter
 def filter_string_column(data, column, condition, value):
     """Apply optimal filtering for string columns."""
     if condition == 'contains':
@@ -36,57 +57,84 @@ def filter_string_column(data, column, condition, value):
         return data[data[column].str.startswith(value, na=False)]
     elif condition == 'endswith':
         return data[data[column].str.endswith(value, na=False)]
+    elif condition == 'in':
+        return data[data[column].isin(value)]
     else:
         raise ValueError(f"Condition '{condition}' not recognized for string columns.")
 
+# Non-Optimized String Filter (Slower)
+def slow_filter_string_column(data, column, condition, value):
+    """Intentionally slower filtering for string columns."""
+    start_time = time.time()
+    result = []
+    for index, row in data.iterrows():
+        if condition == 'contains' and value in row[column]:
+            result.append(row)
+        elif condition == 'startswith' and row[column].startswith(value):
+            result.append(row)
+        elif condition == 'endswith' and row[column].endswith(value):
+            result.append(row)
+        elif condition == 'in' and row[column] in value:
+            result.append(row)
+    end_time = time.time()
+    print(f"Slow method took {end_time - start_time:.4f} seconds")
+    return pd.DataFrame(result)
+
+# Optimized Categorical Filter
 def filter_categorical_column(data, column, condition, value):
     """Apply optimal filtering for categorical columns."""
+    data[column] = data[column].astype(str)
+    
     if condition == 'in':
         return data[data[column].isin(value)]
+    elif condition == 'startswith':
+        return data[data[column].str.startswith(value, na=False)]
+    elif condition == 'contains':
+        return data[data[column].str.contains(value, na=False)]
+    elif condition == 'endswith':
+        return data[data[column].str.endswith(value, na=False)]
     else:
         raise ValueError(f"Condition '{condition}' not recognized for categorical columns.")
 
-def filter_column(data, column, condition, value):
+# Non-Optimized Categorical Filter (Slower)
+def slow_filter_categorical_column(data, column, condition, value):
+    """Intentionally slower filtering for categorical columns."""
+    data[column] = data[column].astype(str)
+    start_time = time.time()
+    result = []
+    for index, row in data.iterrows():
+        if condition == 'contains' and value in row[column]:
+            result.append(row)
+        elif condition == 'startswith' and row[column].startswith(value):
+            result.append(row)
+        elif condition == 'endswith' and row[column].endswith(value):
+            result.append(row)
+        elif condition == 'in' and row[column] in value:
+            result.append(row)
+    end_time = time.time()
+    print(f"Slow method took {end_time - start_time:.4f} seconds")
+    return pd.DataFrame(result)
+
+# Main function to apply the appropriate filter
+def filter_column(data, column, condition, value, slow=False):
     """General function to filter a column based on its type and the selected condition."""
     column_type = identify_column_type(data, column)
     
-    if column_type == 'numeric':
-        return filter_numeric_column(data, column, condition, value)
-    elif column_type == 'string':
-        return filter_string_column(data, column, condition, value)
-    elif column_type == 'categorical':
-        return filter_categorical_column(data, column, condition, value)
+    if slow:
+        # Apply slow filtering method based on the column type
+        if column_type == 'numeric':
+            return slow_filter_numeric_column(data, column, condition, value)
+        elif column_type == 'string':
+            return slow_filter_string_column(data, column, condition, value)
+        elif column_type == 'categorical':
+            return slow_filter_categorical_column(data, column, condition, value)
     else:
-        raise ValueError(f"Unsupported column type '{column_type}' for filtering.")
+        # Apply optimized filtering
+        if column_type == 'numeric':
+            return filter_numeric_column(data, column, condition, value)
+        elif column_type == 'string':
+            return filter_string_column(data, column, condition, value)
+        elif column_type == 'categorical':
+            return filter_categorical_column(data, column, condition, value)
+    raise ValueError(f"Unsupported column type '{column_type}' for filtering.")
 
-# Main function to interact with user and apply filter
-def main():
-    # Load CSV file
-    file_path = input("Enter the path to your CSV file: ")
-    data = load_csv(file_path)
-
-    # Display available columns
-    print("Available columns:", data.columns)
-
-    # Get column, condition, and value for filtering
-    column = input("Enter the column you want to filter: ")
-    condition = input("Enter the condition (greater_than, less_than, equal_to, contains, etc.): ")
-    value = input("Enter the value for the condition: ")
-
-    # Convert value to appropriate type
-    if condition in ['greater_than', 'less_than', 'equal_to', 'not_equal_to']:
-        value = float(value)
-    elif condition in ['contains', 'startswith', 'endswith']:
-        value = str(value)
-    elif condition == 'in':
-        value = value.split(',')  # Convert a comma-separated string to a list of values
-
-    # Apply the filtering
-    filtered_data = filter_column(data, column, condition, value)
-
-    # Show the filtered data
-    print("Filtered Data:")
-    print(filtered_data)
-
-if __name__ == "__main__":
-    main()
