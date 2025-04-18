@@ -537,57 +537,137 @@ SORTING_ALGORITHMS = {
     "Timsort (Numba)": timsort_numba,
 }
 
-def filter_baseline(file_path, filter_value):
-    df = pd.read_csv(file_path)
-    filtered_df = df[df['int_col'] > filter_value]
+def filter_baseline(df, col_name, filter_value):
+    """
+    Baseline filtering function using a DataFrame.
+    :param df: pandas DataFrame
+    :param col_name: column name to filter
+    :param filter_value: threshold value
+    :return: filtered DataFrame
+    """
+    filtered_df = df[df[col_name] > filter_value]
     return filtered_df
 
 # Optimized filtering function using Pandas
-def filter_data_pandas(file_path, filter_value):
-    df = pd.read_csv(file_path)
-    filtered_df = df.loc[df['int_col'] > filter_value]
+def filter_data_pandas(df, col_name, filter_value):
+    """
+    Optimized filtering function using Pandas.
+    :param df: pandas DataFrame
+    :param col_name: column name to filter
+    :param filter_value: threshold value
+    :return: filtered DataFrame
+    """
+    filtered_df = df.loc[df[col_name] > filter_value]
     return filtered_df
 
 # Optimized filtering function using Numpy
-def filter_data_numpy(file_path, filter_value):
-    data = np.genfromtxt(file_path, delimiter=',', skip_header=1)
-    filtered_data = data[data[:, 0] > filter_value]
+def filter_data_numpy(df, col_name, filter_value):
+    """
+    Optimized filtering function using NumPy.
+    :param df: pandas DataFrame
+    :param col_name: column name to filter
+    :param filter_value: threshold value
+    :return: filtered NumPy array
+    """
+    data = df.to_numpy()
+    col_index = df.columns.get_loc(col_name)
+    filtered_data = data[data[:, col_index] > filter_value]
     return filtered_data
 
 # Optimized filtering function using Numba
 @njit
-def filter_data_numba(data, filter_value):
+def filter_data_numba(data, col_index, filter_value):
     filtered_data = []
     for row in data:
-        if row[0] > filter_value:
+        if row[col_index] > filter_value:
             filtered_data.append(row)
     return filtered_data
 
-def filter_data_numba_wrapper(file_path, filter_value):
-    data = np.genfromtxt(file_path, delimiter=',', skip_header=1)
-    return filter_data_numba(data, filter_value)
+def filter_data_numba_wrapper(df, col_name, filter_value):
+    """
+    Optimized filtering function using Numba.
+    :param df: pandas DataFrame
+    :param col_name: column name to filter
+    :param filter_value: threshold value
+    :return: filtered NumPy array
+    """
+    data = df.to_numpy()
+    col_index = df.columns.get_loc(col_name)
+    filtered_data = filter_data_numba(data, col_index, filter_value)
+    return np.array(filtered_data)
 
-def search_baseline(file_path, search_value):
-    df = pd.read_csv(file_path)
-    search_results = df[df['str_col'] == search_value]
+def search_baseline(df, col_name, search_value):
+    """
+    Baseline search function using a DataFrame.
+    :param df: pandas DataFrame
+    :param col_name: column name to search
+    :param search_value: value to search for
+    :return: filtered DataFrame
+    """
+    # Ensure the search_value matches the column's data type
+    try:
+        search_value = df[col_name].dtype.type(search_value)
+    except ValueError:
+        raise ValueError(f"Cannot convert search_value '{search_value}' to match column '{col_name}' type.")
+    
+    search_results = df[df[col_name] == search_value]
     return search_results
 
 # Optimized searching function using Pandas
-def search_data_pandas(file_path, search_value):
-    df = pd.read_csv(file_path)
-    search_results = df.loc[df['str_col'] == search_value]
+def search_data_pandas(df, col_name, search_value):
+    """
+    Optimized searching function using Pandas.
+    :param df: pandas DataFrame
+    :param col_name: column name to search
+    :param search_value: value to search for
+    :return: filtered DataFrame
+    """
+    # Ensure the search_value matches the column's data type
+    try:
+        search_value = df[col_name].dtype.type(search_value)
+    except ValueError:
+        raise ValueError(f"Cannot convert search_value '{search_value}' to match column '{col_name}' type.")
+    
+    search_results = df.loc[df[col_name] == search_value]
     return search_results
 
 # Optimized searching function using NumPy
-def search_data_numpy(file_path, search_value):
-    data = np.genfromtxt(file_path, delimiter=',', skip_header=1, dtype=str)
-    search_results = data[data[:, 2] == search_value]
+def search_data_numpy(df, col_name, search_value):
+    """
+    Optimized searching function using NumPy.
+    :param df: pandas DataFrame
+    :param col_name: column name to search
+    :param search_value: value to search for
+    :return: filtered NumPy array
+    """
+    # Ensure the search_value matches the column's data type
+    try:
+        search_value = df[col_name].dtype.type(search_value)
+    except ValueError:
+        raise ValueError(f"Cannot convert search_value '{search_value}' to match column '{col_name}' type.")
+    
+    data = df.to_numpy()
+    col_index = df.columns.get_loc(col_name)
+    search_results = data[data[:, col_index] == search_value]
     return search_results
 
 # Optimized searching function using string functions
-def search_optimization(file_path, search_value):
-    df = pd.read_csv(file_path)
-    search_results = df[df['str_col'].str.contains(search_value)]
+def search_optimization(df, col_name, search_value):
+    """
+    Optimized searching function using string functions.
+    :param df: pandas DataFrame
+    :param col_name: column name to search
+    :param search_value: value to search for
+    :return: filtered DataFrame
+    """
+    # Ensure the search_value matches the column's data type
+    if not pd.api.types.is_string_dtype(df[col_name]):
+        try:
+            search_value = df[col_name].dtype.type(search_value)
+        except ValueError:
+            raise ValueError(f"Cannot convert search_value '{search_value}' to match column '{col_name}' type.")
+    
+    search_results = df[df[col_name].str.contains(search_value, na=False)]
     return search_results
 
 def group_and_aggregate_normal(data, group_columns, agg_dict):
