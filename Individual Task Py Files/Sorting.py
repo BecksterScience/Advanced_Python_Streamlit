@@ -28,28 +28,21 @@ def bubble_sort(df, col_name, ascending=True):
     return df, time_taken
 
 def bubble_sort_numpy(df, col_name, ascending=True):
-    '''
-    Sorts the dataframe based on the column name in ascending or descending order using numpy.
-    :param df: pandas dataframe
-    :param col_name: column name on which sorting needs to be done
-    :param ascending: boolean value to sort in ascending or descending order
-    :return: sorted dataframe, time taken
-    '''
     start_time = time.time()
-    numpy_array = df[col_name].to_numpy()
-    col_index = 0  # Since we are only sorting one column, its index is 0
-    for i in range(len(numpy_array)):
-        for j in range(len(numpy_array)-1):
-            if ascending:
-                if numpy_array[j] > numpy_array[j+1]:
-                    numpy_array[j], numpy_array[j+1] = numpy_array[j+1].copy(), numpy_array[j].copy()
-            else:
-                if numpy_array[j] < numpy_array[j+1]:
-                    numpy_array[j], numpy_array[j+1] = numpy_array[j+1].copy(), numpy_array[j].copy()
-    df[col_name] = numpy_array
+    df = df.copy()
+
+    arr = df[col_name].to_numpy()
+    idx = np.arange(len(df))  # track row positions
+
+    for i in range(len(arr)):
+        for j in range(len(arr) - 1):
+            if (ascending and arr[j] > arr[j + 1]) or (not ascending and arr[j] < arr[j + 1]):
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+                idx[j], idx[j + 1] = idx[j + 1], idx[j]
+
+    df_sorted = df.iloc[idx].reset_index(drop=True)
     end_time = time.time()
-    time_taken = end_time - start_time
-    return df, time_taken
+    return df_sorted, end_time - start_time
 
 def bubble_sort_cython_wrapper(df, col_name, ascending=True):
     '''
@@ -979,4 +972,18 @@ def group_by_changed_value(data, col):
     return result, elapsed
 
 if __name__ == '__main__':
+    # Create the DataFrame to sort
     df = pd.DataFrame(np.random.randint(0, 100, size=(1000, 4)), columns=list('ABCD'))
+    col_to_sort = 'A'
+
+    print(f"\nSorting DataFrame by column '{col_to_sort}' using all sorting algorithms:\n")
+
+    for name, sort_func in SORTING_ALGORITHMS.items():
+        try:
+            sorted_df, elapsed = sort_func(df.copy(), col_to_sort)
+            print(f"--- {name} ---")
+            print(sorted_df.head(5))  # Show top 5 rows
+            print(f"Time taken: {elapsed:.6f} seconds\n")
+        except Exception as e:
+            print(f"--- {name} FAILED ---")
+            print(f"Error: {e}\n")
