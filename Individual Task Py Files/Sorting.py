@@ -18,11 +18,11 @@ def bubble_sort(df, col_name, ascending=True):
     for i in range(len(df)):
         for j in range(len(df)-1):
             if ascending:
-                if df[col_name][j] > df[col_name][j+1]:
-                    df.loc[j], df.loc[j+1] = df.loc[j+1].copy(), df.loc[j].copy()
+                if df[col_name].iloc[j] > df[col_name].iloc[j+1]:
+                    df.iloc[j], df.iloc[j+1] = df.iloc[j+1].copy(), df.iloc[j].copy()
             else:
-                if df[col_name][j] < df[col_name][j+1]:
-                    df.loc[j], df.loc[j+1] = df.loc[j+1].copy(), df.loc[j].copy()
+                if df[col_name].iloc[j] < df[col_name].iloc[j+1]:
+                    df.iloc[j], df.iloc[j+1] = df.iloc[j+1].copy(), df.iloc[j].copy()
     end_time = time.time()
     time_taken = end_time - start_time
     return df, time_taken

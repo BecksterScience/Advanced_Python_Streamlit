@@ -24,7 +24,7 @@ def plot_scaling(data, func, col, *args, **kwargs):
         if subset_size == 0:
             continue
 
-        subset_data = data.sample(n=subset_size)
+        subset_data = data.sample(n=subset_size).reset_index(drop=True)
         start_time = time.time()
         func(subset_data.copy(), col, *args, **kwargs)
         times.append(time.time() - start_time)
@@ -55,6 +55,7 @@ def main():
 
         try:
             df = pd.read_csv(uploaded_file)
+            df = df.reset_index(drop=True)
             st.success("CSV loaded successfully!")
             if not st.session_state['Run']:
                 st.dataframe(df.head())
@@ -85,7 +86,7 @@ def main():
 
             if st.sidebar.button("Run Sorting"):
                 with st.spinner("Sorting..."):
-                    df_copy = df.copy()
+                    df_copy = df.copy().reset_index(drop=True)
                     sorted_col_df, elapsed = mp.SORTING_ALGORITHMS[alg](df_copy[[col]].copy(), col, ascending=asc)
                     sorted_values = sorted_col_df[col].values
                     temp_sorted_df = df_copy.copy()
@@ -100,7 +101,7 @@ def main():
 
                 if visualize:
                     st.subheader("📊 Sorting Performance Scaling")
-                    plot_scaling(df.copy(), mp.SORTING_ALGORITHMS[alg], col, ascending=asc)
+                    plot_scaling(df.copy().reset_index(drop=True), mp.SORTING_ALGORITHMS[alg], col, ascending=asc)
 
     elif operation == "Filtering":
         with st.expander("🧪 Filtering Options", expanded=True):
