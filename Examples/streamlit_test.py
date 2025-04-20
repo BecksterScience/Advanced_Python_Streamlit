@@ -4,6 +4,55 @@ from filtering_example import load_csv, filter_column  # Assuming filter_column 
 import time
 import matplotlib.pyplot as plt
 
+def reduce_memory_usage(df):
+    start_mem = df.memory_usage(deep=True).sum() / 1024**2
+
+    for col in df.columns:
+        col_type = df[col].dtypes
+
+        if pd.api.types.is_numeric_dtype(col_type):
+            if df[col].isnull().any():
+                continue
+
+            try:
+                c_min = df[col].min()
+                c_max = df[col].max()
+            except:
+                continue  # skipping if min/max throws error
+
+            if pd.api.types.is_integer_dtype(col_type):
+                try:
+                    if c_min >= np.iinfo(np.int8).min and c_max <= np.iinfo(np.int8).max:
+                        df[col] = df[col].astype(np.int8)
+                    elif c_min >= np.iinfo(np.int16).min and c_max <= np.iinfo(np.int16).max:
+                        df[col] = df[col].astype(np.int16)
+                    elif c_min >= np.iinfo(np.int32).min and c_max <= np.iinfo(np.int32).max:
+                        df[col] = df[col].astype(np.int32)
+                    else:
+                        df[col] = df[col].astype(np.int64)
+                except:
+                    continue
+            else:
+                try:
+                    if c_min >= np.finfo(np.float32).min and c_max <= np.finfo(np.float32).max:
+                        df[col] = df[col].astype(np.float32)
+                    else:
+                        df[col] = df[col].astype(np.float64)
+                except:
+                    continue
+
+        elif pd.api.types.is_object_dtype(col_type):
+            try:
+                df[col] = pd.to_datetime(df[col])
+            except:
+                if df[col].nunique() / len(df[col]) < 0.5:
+                    df[col] = df[col].astype('category')
+
+    end_mem = df.memory_usage(deep=True).sum() / 1024**2
+    return df, start_mem, end_mem
+
+
+
 def main():
     # Streamlit UI components
     st.title("Analyzing Most Efficient Search/Sort/Filter Algorithms Based Off Data")
@@ -14,6 +63,20 @@ def main():
     if file is not None:
         # Load the CSV data
         data = load_csv(file)
+        if st.checkbox("Step 1.1: Optimize memory usage of uploaded data"):
+            data, start_mem, end_mem = reduce_memory_usage(data)
+            st.success(f"Memory reduced from {start_mem:.2f} MB to {end_mem:.2f} MB ({100*(start_mem - end_mem)/start_mem:.1f}% reduction).")
+            fig, ax = plt.subplots()
+            ax.bar(["Before", "After"], [start_mem, end_mem], color=["#FF6961", "#77DD77"])
+            ax.set_title("Memory Optimization Impact")
+            ax.set_ylabel("Memory (MB)")
+            st.pyplot(fig)
+
+
+        
+
+
+        
         
         # Step 2: Let the user select a column to filter
         column = st.selectbox("Select column to filter", data.columns)
