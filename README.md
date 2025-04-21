@@ -36,13 +36,13 @@ git clone https://github.com/Akshi22/advanced_python.git
 cd advanced_python 
 
 # Create virtual environment
-python3 -m venv myenv \
+python3 -m venv myenv
 source myenv/bin/activate
 
 # Install dependencies and build files
-pip install -r requirements.txt \
-cd Individual\ Task\ Py\ Files/ \
-python setup.py build_ext --inplace \
+pip install -r requirements.txt
+cd Individual\ Task\ Py\ Files/
+python setup.py build_ext --inplace
 python setup_cython_sorting.py build_ext --inplace
 ```
 
@@ -60,6 +60,7 @@ python -m streamlit run Streamlit_test.py
 - Streamlit
 - Cython
 - Numba
+- Multiprocessing
 '''To fill'''
 
 
