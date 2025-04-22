@@ -80,3 +80,8 @@ Example of how the output should look (screenshots or sample results).
 ## 📬 Contact
 
 For any inquiries, reach out to your.email\@example.com. ### To be populated
+
+## Credits
+
+This project was originally developed in collaboration with [Akshi22](https://github.com/Akshi22) and others as part of a group assignment.  
+This repository is a personal backup and presentation of my contributions to the project.
