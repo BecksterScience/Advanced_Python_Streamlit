@@ -18,31 +18,38 @@ def bubble_sort(df, col_name, ascending=True):
     for i in range(len(df)):
         for j in range(len(df)-1):
             if ascending:
-                if df[col_name].iloc[j] > df[col_name].iloc[j+1]:
-                    df.iloc[j], df.iloc[j+1] = df.iloc[j+1].copy(), df.iloc[j].copy()
+                if df[col_name][j] > df[col_name][j+1]:
+                    df.loc[j], df.loc[j+1] = df.loc[j+1].copy(), df.loc[j].copy()
             else:
-                if df[col_name].iloc[j] < df[col_name].iloc[j+1]:
-                    df.iloc[j], df.iloc[j+1] = df.iloc[j+1].copy(), df.iloc[j].copy()
+                if df[col_name][j] < df[col_name][j+1]:
+                    df.loc[j], df.loc[j+1] = df.loc[j+1].copy(), df.loc[j].copy()
     end_time = time.time()
     time_taken = end_time - start_time
     return df, time_taken
 
 def bubble_sort_numpy(df, col_name, ascending=True):
+    '''
+    Sorts the dataframe based on the column name in ascending or descending order using numpy.
+    :param df: pandas dataframe
+    :param col_name: column name on which sorting needs to be done
+    :param ascending: boolean value to sort in ascending or descending order
+    :return: sorted dataframe, time taken
+    '''
     start_time = time.time()
-    df = df.copy()
-
-    arr = df[col_name].to_numpy()
-    idx = np.arange(len(df))  # track row positions
-
-    for i in range(len(arr)):
-        for j in range(len(arr) - 1):
-            if (ascending and arr[j] > arr[j + 1]) or (not ascending and arr[j] < arr[j + 1]):
-                arr[j], arr[j + 1] = arr[j + 1], arr[j]
-                idx[j], idx[j + 1] = idx[j + 1], idx[j]
-
-    df_sorted = df.iloc[idx].reset_index(drop=True)
+    numpy_array = df[col_name].to_numpy()
+    col_index = 0  # Since we are only sorting one column, its index is 0
+    for i in range(len(numpy_array)):
+        for j in range(len(numpy_array)-1):
+            if ascending:
+                if numpy_array[j] > numpy_array[j+1]:
+                    numpy_array[j], numpy_array[j+1] = numpy_array[j+1].copy(), numpy_array[j].copy()
+            else:
+                if numpy_array[j] < numpy_array[j+1]:
+                    numpy_array[j], numpy_array[j+1] = numpy_array[j+1].copy(), numpy_array[j].copy()
+    df[col_name] = numpy_array
     end_time = time.time()
-    return df_sorted, end_time - start_time
+    time_taken = end_time - start_time
+    return df, time_taken
 
 def bubble_sort_cython_wrapper(df, col_name, ascending=True):
     '''
@@ -530,57 +537,137 @@ SORTING_ALGORITHMS = {
     "Timsort (Numba)": timsort_numba,
 }
 
-def filter_baseline(file_path, filter_value):
-    df = pd.read_csv(file_path)
-    filtered_df = df[df['int_col'] > filter_value]
+def filter_baseline(df, col_name, filter_value):
+    """
+    Baseline filtering function using a DataFrame.
+    :param df: pandas DataFrame
+    :param col_name: column name to filter
+    :param filter_value: threshold value
+    :return: filtered DataFrame
+    """
+    filtered_df = df[df[col_name] > filter_value]
     return filtered_df
 
 # Optimized filtering function using Pandas
-def filter_data_pandas(file_path, filter_value):
-    df = pd.read_csv(file_path)
-    filtered_df = df.loc[df['int_col'] > filter_value]
+def filter_data_pandas(df, col_name, filter_value):
+    """
+    Optimized filtering function using Pandas.
+    :param df: pandas DataFrame
+    :param col_name: column name to filter
+    :param filter_value: threshold value
+    :return: filtered DataFrame
+    """
+    filtered_df = df.loc[df[col_name] > filter_value]
     return filtered_df
 
 # Optimized filtering function using Numpy
-def filter_data_numpy(file_path, filter_value):
-    data = np.genfromtxt(file_path, delimiter=',', skip_header=1)
-    filtered_data = data[data[:, 0] > filter_value]
+def filter_data_numpy(df, col_name, filter_value):
+    """
+    Optimized filtering function using NumPy.
+    :param df: pandas DataFrame
+    :param col_name: column name to filter
+    :param filter_value: threshold value
+    :return: filtered NumPy array
+    """
+    data = df.to_numpy()
+    col_index = df.columns.get_loc(col_name)
+    filtered_data = data[data[:, col_index] > filter_value]
     return filtered_data
 
 # Optimized filtering function using Numba
 @njit
-def filter_data_numba(data, filter_value):
+def filter_data_numba(data, col_index, filter_value):
     filtered_data = []
     for row in data:
-        if row[0] > filter_value:
+        if row[col_index] > filter_value:
             filtered_data.append(row)
     return filtered_data
 
-def filter_data_numba_wrapper(file_path, filter_value):
-    data = np.genfromtxt(file_path, delimiter=',', skip_header=1)
-    return filter_data_numba(data, filter_value)
+def filter_data_numba_wrapper(df, col_name, filter_value):
+    """
+    Optimized filtering function using Numba.
+    :param df: pandas DataFrame
+    :param col_name: column name to filter
+    :param filter_value: threshold value
+    :return: filtered NumPy array
+    """
+    data = df.to_numpy()
+    col_index = df.columns.get_loc(col_name)
+    filtered_data = filter_data_numba(data, col_index, filter_value)
+    return np.array(filtered_data)
 
-def search_baseline(file_path, search_value):
-    df = pd.read_csv(file_path)
-    search_results = df[df['str_col'] == search_value]
+def search_baseline(df, col_name, search_value):
+    """
+    Baseline search function using a DataFrame.
+    :param df: pandas DataFrame
+    :param col_name: column name to search
+    :param search_value: value to search for
+    :return: filtered DataFrame
+    """
+    # Ensure the search_value matches the column's data type
+    try:
+        search_value = df[col_name].dtype.type(search_value)
+    except ValueError:
+        raise ValueError(f"Cannot convert search_value '{search_value}' to match column '{col_name}' type.")
+    
+    search_results = df[df[col_name] == search_value]
     return search_results
 
 # Optimized searching function using Pandas
-def search_data_pandas(file_path, search_value):
-    df = pd.read_csv(file_path)
-    search_results = df.loc[df['str_col'] == search_value]
+def search_data_pandas(df, col_name, search_value):
+    """
+    Optimized searching function using Pandas.
+    :param df: pandas DataFrame
+    :param col_name: column name to search
+    :param search_value: value to search for
+    :return: filtered DataFrame
+    """
+    # Ensure the search_value matches the column's data type
+    try:
+        search_value = df[col_name].dtype.type(search_value)
+    except ValueError:
+        raise ValueError(f"Cannot convert search_value '{search_value}' to match column '{col_name}' type.")
+    
+    search_results = df.loc[df[col_name] == search_value]
     return search_results
 
 # Optimized searching function using NumPy
-def search_data_numpy(file_path, search_value):
-    data = np.genfromtxt(file_path, delimiter=',', skip_header=1, dtype=str)
-    search_results = data[data[:, 2] == search_value]
+def search_data_numpy(df, col_name, search_value):
+    """
+    Optimized searching function using NumPy.
+    :param df: pandas DataFrame
+    :param col_name: column name to search
+    :param search_value: value to search for
+    :return: filtered NumPy array
+    """
+    # Ensure the search_value matches the column's data type
+    try:
+        search_value = df[col_name].dtype.type(search_value)
+    except ValueError:
+        raise ValueError(f"Cannot convert search_value '{search_value}' to match column '{col_name}' type.")
+    
+    data = df.to_numpy()
+    col_index = df.columns.get_loc(col_name)
+    search_results = data[data[:, col_index] == search_value]
     return search_results
 
 # Optimized searching function using string functions
-def search_optimization(file_path, search_value):
-    df = pd.read_csv(file_path)
-    search_results = df[df['str_col'].str.contains(search_value)]
+def search_optimization(df, col_name, search_value):
+    """
+    Optimized searching function using string functions.
+    :param df: pandas DataFrame
+    :param col_name: column name to search
+    :param search_value: value to search for
+    :return: filtered DataFrame
+    """
+    # Ensure the search_value matches the column's data type
+    if not pd.api.types.is_string_dtype(df[col_name]):
+        try:
+            search_value = df[col_name].dtype.type(search_value)
+        except ValueError:
+            raise ValueError(f"Cannot convert search_value '{search_value}' to match column '{col_name}' type.")
+    
+    search_results = df[df[col_name].str.contains(search_value, na=False)]
     return search_results
 
 def group_and_aggregate_normal(data, group_columns, agg_dict):
@@ -972,18 +1059,4 @@ def group_by_changed_value(data, col):
     return result, elapsed
 
 if __name__ == '__main__':
-    # Create the DataFrame to sort
     df = pd.DataFrame(np.random.randint(0, 100, size=(1000, 4)), columns=list('ABCD'))
-    col_to_sort = 'A'
-
-    print(f"\nSorting DataFrame by column '{col_to_sort}' using all sorting algorithms:\n")
-
-    for name, sort_func in SORTING_ALGORITHMS.items():
-        try:
-            sorted_df, elapsed = sort_func(df.copy(), col_to_sort)
-            print(f"--- {name} ---")
-            print(sorted_df.head(5))  # Show top 5 rows
-            print(f"Time taken: {elapsed:.6f} seconds\n")
-        except Exception as e:
-            print(f"--- {name} FAILED ---")
-            print(f"Error: {e}\n")

@@ -35,14 +35,21 @@ git clone https://github.com/Akshi22/advanced_python.git
 # Move into the project directory
 cd advanced_python 
 
-# Install dependencies
+# Create virtual environment
+python3 -m venv myenv
+source myenv/bin/activate
+
+# Install dependencies and build files
 pip install -r requirements.txt
+cd Individual\ Task\ Py\ Files/
+python setup.py build_ext --inplace
+python setup_cython_sorting.py build_ext --inplace
 ```
 
 ## 🔧 Usage
 
 ```sh
-python main.py ### Placeholder Until We Create py
+python -m streamlit run Streamlit_test.py
 ```
 
 ## 🛠️ Technologies Used
@@ -51,6 +58,9 @@ python main.py ### Placeholder Until We Create py
 - Pandas
 - NumPy
 - Streamlit
+- Cython
+- Numba
+- Multiprocessing
 '''To fill'''
 
 
